@@ -15,7 +15,7 @@ body{background:#0b1220;color:#e2e8f0}
 <div class="max-w-6xl mx-auto px-4 py-6 space-y-4">
 <header class="flex flex-wrap items-center justify-between gap-3">
 <div><h1 class="text-2xl font-bold">Space Mini-Car Telemetry</h1>
-<p class="text-sm text-slate-400">Chrome or Edge only. Close the Arduino Serial Monitor first.</p></div>
+<p class="text-sm text-slate-400">Chrome or Edge. Close the Arduino Serial Monitor first.</p></div>
 <div class="flex items-center gap-2">
 <span id="statusBadge" class="text-xs px-3 py-1 rounded-full bg-slate-800 border border-slate-700">Offline</span>
 <button id="connectBtn" type="button" class="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm">Connect USB Port</button>
@@ -40,22 +40,29 @@ function showError(msg){var b=document.getElementById('errorBox');b.textContent=
 function logLine(text){var el=document.getElementById('serialLog');var row=document.createElement('div');row.textContent='['+new Date().toLocaleTimeString()+'] '+text;el.appendChild(row);el.scrollTop=el.scrollHeight;}
 var port=null, reader=null, keepReading=false;
 var charts=[];
-var history={labels:[],temp:[],hum:[],ldr:[]};
+var samples={labels:[],temp:[],hum:[],ldr:[]};
 function setupCharts(){
-  if(typeof Chart==='undefined'){showError('Charts library did not load. USB connect still works. Numbers will show, graphs will not.');return;}
+  if(typeof Chart==='undefined'){showError('Charts did not load. Numbers will still update.');return;}
   function make(id,color,a,b){return new Chart(document.getElementById(id),{type:'line',data:{labels:[],datasets:[{data:[],borderColor:color,borderWidth:2,pointRadius:0,tension:0.25,fill:false}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#64748b',maxTicksLimit:5}},y:{suggestedMin:a,suggestedMax:b,ticks:{color:'#64748b'}}}}});}
-  charts=[make('tempChart','#fb923c',0,40),make('humChart','#22d3ee',0,100),make('ldrChart','#fcd34d',0,1023)];
+  try{charts=[make('tempChart','#fb923c',0,40),make('humChart','#22d3ee',0,100),make('ldrChart','#fcd34d',0,1023)];}
+  catch(e){showError('Chart setup failed: '+e.message);}
 }
 function pushPoint(temp,hum,ldr){
-  if(!charts.length)return;
   var t=new Date().toLocaleTimeString();
-  history.labels.push(t);history.temp.push(temp);history.hum.push(hum);history.ldr.push(ldr);
-  if(history.labels.length>60){history.labels.shift();history.temp.shift();history.hum.shift();history.ldr.shift();}
-  var series=[history.temp,history.hum,history.ldr];
-  charts.forEach(function(c,i){c.data.labels=history.labels;c.data.datasets[0].data=series[i];c.update('none');});
+  samples.labels.push(t);samples.temp.push(temp);samples.hum.push(hum);samples.ldr.push(ldr);
+  if(samples.labels.length>60){samples.labels.shift();samples.temp.shift();samples.hum.shift();samples.ldr.shift();}
+  if(!charts.length)return;
+  var series=[samples.temp,samples.hum,samples.ldr];
+  for(var i=0;i<charts.length;i++){
+    charts[i].data.labels=samples.labels.slice();
+    charts[i].data.datasets[0].data=series[i].slice();
+    charts[i].update('none');
+  }
 }
 function parseLine(line){
-  var tm=line.match(/Temp:\s*([-\d.]+)\s*C/i), hm=line.match(/Hum:\s*([-\d.]+)\s*%/i), lm=line.match(/LDR:\s*(\d+)/i);
+  var tm=line.match(/Temp:\s*([-\d.]+)\s*C/i);
+  var hm=line.match(/Hum:\s*([-\d.]+)\s*%/i);
+  var lm=line.match(/LDR:\s*(\d+)/i);
   if(!tm||!hm||!lm)return;
   var temp=parseFloat(tm[1]), hum=parseFloat(hm[1]), ldr=parseInt(lm[1],10);
   document.getElementById('tempVal').textContent=temp.toFixed(1);
@@ -68,24 +75,18 @@ function parseLine(line){
   pushPoint(temp,hum,ldr);
 }
 function setStatus(on){
-  var b=document.getElementById('statusBadge'), btn=document.getElementById('connectBtn');
-  b.textContent=on?'Online':'Offline';
-  btn.textContent=on?'Disconnect':'Connect USB Port';
+  document.getElementById('statusBadge').textContent=on?'Online':'Offline';
+  document.getElementById('connectBtn').textContent=on?'Disconnect':'Connect USB Port';
 }
 async function connectSerial(){
-  if(!('serial' in navigator)){
-    showError('This browser has no Web Serial. Use Google Chrome or Microsoft Edge on a computer. Phones cannot connect. Do not open a downloaded file.');
-    return;
-  }
+  if(!('serial' in navigator)){showError('Use Chrome or Edge on a computer.');return;}
   try{
     port=await navigator.serial.requestPort();
     await port.open({baudRate:9600});
     keepReading=true; setStatus(true); logLine('Port open at 9600');
     readLoop();
   }catch(err){
-    var msg=err&&err.message?err.message:String(err);
-    logLine('Connect failed: '+msg);
-    showError('Connect failed: '+msg+'. Close the Arduino Serial Monitor, then try again.');
+    logLine('Connect failed: '+(err.message||err));
     setStatus(false);
   }
 }
@@ -100,26 +101,25 @@ async function readLoop(){
   port.readable.pipeTo(decoder.writable).catch(function(){});
   reader=decoder.readable.getReader();
   var buffer='';
+  var nl=String.fromCharCode(10);
   try{
     while(keepReading){
       var result=await reader.read();
       if(result.done) break;
       buffer+=result.value||'';
       var i;
-      while((i=buffer.indexOf('\n'))>=0){
+      while((i=buffer.indexOf(nl))>=0){
         var line=buffer.slice(0,i).replace(/\r$/,'').trim();
         buffer=buffer.slice(i+1);
         if(!line) continue;
-        logLine(line); parseLine(line);
+        logLine(line);
+        try{ parseLine(line); }catch(e){ logLine('Parse error: '+e.message); }
       }
     }
   }catch(err){ if(keepReading) logLine('Read error: '+(err.message||err)); }
 }
-document.getElementById('connectBtn').addEventListener('click', function(){
-  if(port) disconnectSerial(); else connectSerial();
-});
+document.getElementById('connectBtn').addEventListener('click', function(){ if(port) disconnectSerial(); else connectSerial(); });
 setupCharts();
-if(location.protocol==='file:') showError('You opened a downloaded file. That cannot use USB. Use https://aiernest817.github.io/space/ in Chrome or Edge.');
 </script>
 </body>
 </html>
