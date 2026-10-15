@@ -1,1047 +1,159 @@
-<html lang="en" class="dark"><head><script data-bard-client-injected="true">(function(firebaseConfig, initialAuthToken, appId) {
-        window.__firebase_config = firebaseConfig;
-        window.__initial_auth_token = initialAuthToken;
-        window.__app_id = appId;
-            })("\n{\n  \"apiKey\": \"AIzaSyCqyCcs2R2e7AegGjvFAwG98wlamtbHvZY\",\n  \"authDomain\": \"bard-frontend.firebaseapp.com\",\n  \"projectId\": \"bard-frontend\",\n  \"storageBucket\": \"bard-frontend.firebasestorage.app\",\n  \"messagingSenderId\": \"175205271074\",\n  \"appId\": \"1:175205271074:web:2b7bd4d34d33bf38e6ec7b\"\n}\n","eyJhbGciOiJSUzI1NiIsImtpZCI6IjExNjRiNzdiNDMzZDdhMDAyMWI4NjE4YjhjYTU3ZTMyZGI5MWUxMTMiLCJ0eXAiOiJKV1QifQ.eyJzdWIiOiJmaXJlYmFzZS1hZG1pbnNkay1mYnN2Y0BiYXJkLWZyb250ZW5kLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwiYXVkIjoiaHR0cHM6Ly9pZGVudGl0eXRvb2xraXQuZ29vZ2xlYXBpcy5jb20vZ29vZ2xlLmlkZW50aXR5LmlkZW50aXR5dG9vbGtpdC52MS5JZGVudGl0eVRvb2xraXQiLCJ1aWQiOiIwNzM0Mzc4OTc0NzI4OTk0ODY1MCIsImlzcyI6ImZpcmViYXNlLWFkbWluc2RrLWZic3ZjQGJhcmQtZnJvbnRlbmQuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iLCJjbGFpbXMiOnsiYXBwSWQiOiJjX2M0YTMzNjFlYjU3ZGI0N2NfYXJkdWlub191bm9fZGFzaGJvYXJkLmh0bWwtMjQxIn0sImV4cCI6MTc5MTU5NzY0NSwiaWF0IjoxNzkxNTk0MDQ1LCJhbGciOiJSUzI1NiJ9.CLNftnwyjiB-1OBmzexcEu3j_0tpfvCaJVINhIo_3RLXKDvaCqF_wWNLr6wUvKXf2ysdA42V0n2rKokcZ3l7hZWpF0tdA8PF3uVnm3bNzATZvr3Aqf_pbUjV8GThG-swU9FE6p8DR3wnJ-uKtQw4V-KLwWm8LigXv7HRanJT1GEf9mzC_LpNIEXK65WRHR_BryLyItkQCaO59OHkHVGiQmhom_JYxRGe3V4q4Mvk-A5UIP4Ak2TIIMC0hfZiSzeiwzrnDCAnuXn-i1RaWuZrKIBqaYAjBH3dC3pq79OxJfvMTk3fgWhnxer-LtkrH0V9LGRTOd-TsgCR-2n3OnxDbg","c_c4a3361eb57db47c_arduino_uno_dashboard.html-241")</script><script data-bard-client-injected="true">
-  document.addEventListener('input', (event) => {
-    if (event.target && (event.target.isContentEditable || event.target.hasAttribute('contenteditable'))) {
-      const clonedDoc = document.cloneNode(true);
-      const injectedScripts = clonedDoc.querySelectorAll('[data-bard-client-injected="true"]');
-      injectedScripts.forEach(el => el.remove());
-      window.parent.postMessage({
-        type: 'inlineEdit',
-        html: '<!DOCTYPE html>\n' + clonedDoc.documentElement.outerHTML
-      }, '*');
-    }
-  });
-</script><script data-bard-client-injected="true">(function(){'use strict';window.addEventListener("message",a=>{a.data&&a.data.type==="SUPPLEMENTAL_DATA_UPDATE"&&window.dispatchEvent(new CustomEvent("supplementaldataupdate",{detail:a.data.data}))});}).call(this);
-</script><script data-bard-client-injected="true">(function() {
-  const SCROLL_KEYS = new Set([
-    'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
-    ' ', 'Spacebar', 'PageUp', 'PageDown', 'Home', 'End',
-  ]);
-  const HORIZONTAL_KEYS = new Set(['ArrowLeft', 'ArrowRight']);
-
-  function isTextEntryTarget(target) {
-    if (!target) return false;
-    const tagName = target.tagName;
-    return tagName === 'INPUT' || tagName === 'TEXTAREA' ||
-        tagName === 'SELECT' || target.isContentEditable === true;
-  }
-
-  // An element absorbs the key only if it both overflows on the axis being
-  // scrolled and is configured to scroll on that axis. The cheap dimension
-  // test runs first because getComputedStyle forces a style recalc, and this
-  // runs on every keypress. Each axis is read from its own longhand: the
-  // 'overflow' shorthand serializes as two values when the axes differ, which
-  // is the common 'overflow-x: hidden; overflow-y: auto' pane.
-  function canScroll(node, horizontal) {
-    const overflows = horizontal ? node.scrollWidth > node.clientWidth
-                                 : node.scrollHeight > node.clientHeight;
-    if (!overflows) return false;
-    const style = window.getComputedStyle(node);
-    const overflow = horizontal ? style.overflowX : style.overflowY;
-    return overflow === 'auto' || overflow === 'scroll';
-  }
-
-  // Walks up from the event target so nested scrollers keep their behavior.
-  // <body> is included because pages that pin the root height make it the
-  // scroll container.
-  function hasScrollableAncestor(target, horizontal) {
-    let node = target;
-    while (node && node !== document.documentElement) {
-      if (canScroll(node, horizontal)) return true;
-      node = node.parentElement;
-    }
-    return false;
-  }
-
-  function rootCanScroll(horizontal) {
-    const scroller = document.scrollingElement || document.documentElement;
-    if (!scroller) return false;
-    // Tolerate a pixel of rounding so subpixel layouts do not look scrollable.
-    return horizontal ? scroller.scrollWidth > window.innerWidth + 1
-                      : scroller.scrollHeight > window.innerHeight + 1;
-  }
-
-  window.addEventListener('keydown', function(event) {
-    if (!SCROLL_KEYS.has(event.key)) return;
-    if (event.defaultPrevented) return;
-    // Alt and Meta turn arrows into browser history navigation, and Ctrl is
-    // reserved for shortcuts, so none of them are scroll intent.
-    if (event.altKey || event.metaKey || event.ctrlKey) return;
-
-    const target = event.target;
-    if (isTextEntryTarget(target)) return;
-
-    // Anything that can still absorb the scroll gets to keep it.
-    const horizontal = HORIZONTAL_KEYS.has(event.key);
-    if (rootCanScroll(horizontal)) return;
-    if (hasScrollableAncestor(target, horizontal)) return;
-
-    event.preventDefault();
-  }, {capture: true, passive: false});
-})();</script><script data-bard-client-injected="true">(function() {
-  // Ensure this script is executed only once
-  if (window.firebaseAuthBridgeScriptLoaded) {
-    return;
-  }
-  window.firebaseAuthBridgeScriptLoaded = true;
-
-  let nextTokenPromiseId = 0;
-
-  // Stores { resolve, reject } for ongoing token requests
-  const pendingTokenPromises = {};
-
-  // Listen for messages from the Host Application
-  window.addEventListener('message', function(event) {
-
-    const messageData = event.data;
-
-  if (messageData && messageData.type === 'RESOLVE_NEW_FIREBASE_TOKEN') {
-      const { success, token, error, promiseId } = messageData ?? {};
-      if (pendingTokenPromises[promiseId]) {
-        if (success) {
-          pendingTokenPromises[promiseId].resolve(token);
-        } else {
-          pendingTokenPromises[promiseId].reject(new Error(error || 'Token refresh failed from host.'));
-        }
-        delete pendingTokenPromises[promiseId];
-      }
-    }
-  });
-
-  // Expose a function for the Generated App to request a new Firebase token
-  window.requestNewFirebaseToken = function() {
-    const currentPromiseId = nextTokenPromiseId++;
-    const promise = new Promise((resolve, reject) => {
-      pendingTokenPromises[currentPromiseId] = { resolve, reject };
-    });
-    if (window.parent && window.parent !== window) {
-      window.parent.postMessage({
-        type: 'REQUEST_NEW_FIREBASE_TOKEN',
-        promiseId: currentPromiseId
-      }, '*');
-    } else {
-      pendingTokenPromises[currentPromiseId].reject(new Error('No parent window to request token from.'));
-      delete pendingTokenPromises[currentPromiseId];
-    }
-    return promise;
-  };
-})();</script><script data-bard-client-injected="true">
-let realOriginalGetUserMedia = null;
-if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-  realOriginalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
-}
-
-(function() {
-  if (navigator.mediaDevices && navigator.mediaDevices.__proto__) {
-    try {
-      Object.defineProperty(navigator.mediaDevices.__proto__, 'getUserMedia', {
-        get: function() {
-          return undefined; // Or throw an error
-        },
-        configurable: false
-      });
-    } catch (error) {
-      console.error("Error defining prototype getter:", error);
-    }
-  }
-})();
-
-(function() {
-  const pendingMediaResolvers = {};
-  let nextMediaPromiseId = 0;
-
-  function requestMediaPermissions(constraints) {
-    const mediaPromiseId = nextMediaPromiseId++;
-    const promise = new Promise((resolve, reject) => {
-      pendingMediaResolvers[mediaPromiseId] = (granted) => {
-        delete pendingMediaResolvers[mediaPromiseId];
-        resolve(granted);
-      };
-    });
-
-    window.parent.postMessage({
-      type: 'requestMediaPermission',
-      constraints: constraints,
-      promiseId: mediaPromiseId,
-    }, '*');
-
-    return promise;
-  }
-
-  let originalGetUserMedia = realOriginalGetUserMedia;
-
-  function interceptGetUserMedia() {
-    if (navigator.mediaDevices) {
-      Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
-        value: function(constraints) {
-          return requestMediaPermissions(constraints).then((granted) => {
-            if (granted) {
-              if (originalGetUserMedia) {
-                return originalGetUserMedia(constraints);
-              } else {
-                throw new Error("Original getUserMedia not available.");
-              }
-            } else {
-              throw new DOMException('Permission denied', 'NotAllowedError');
-            }
-          });
-        },
-        writable: false,
-        configurable: false
-      });
-    }
-  }
-
-  interceptGetUserMedia();
-
-  const observer = new MutationObserver(function(mutationsList, observer) {
-    for (const mutation of mutationsList) {
-      if (mutation.type === 'reconfigured' && mutation.name === 'getUserMedia' && mutation.object === navigator.mediaDevices) {
-        interceptGetUserMedia();
-      } else if (mutation.type === 'attributes' && mutation.attributeName === 'getUserMedia' && mutation.target === navigator.mediaDevices) {
-        interceptGetUserMedia();
-      } else if (mutation.type === 'childList' && mutation.addedNodes) {
-        mutation.addedNodes.forEach(node => {
-          if (node === navigator.mediaDevices) {
-            interceptGetUserMedia();
-          }
-        });
-      }
-    }
-  });
-
-  function interceptSpeechRecognition() {
-    if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
-      return;
-    }
-
-    const OriginalSpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    const SpeechRecognitionWrapper = function(...args) {
-      const recognizer = new OriginalSpeechRecognition(...args);
-      const originalStart = recognizer.start.bind(recognizer);
-
-      recognizer.start = function() {
-        requestMediaPermissions({ audio: true }).then(granted => {
-          if (granted) {
-            originalStart();
-          } else {
-            const errorEvent = new SpeechRecognitionErrorEvent('error');
-            errorEvent.error = 'not-allowed'; // This is the standard error for permission denial.
-            recognizer.dispatchEvent(errorEvent);
-          }
-        });
-      };
-
-      return recognizer;
-    };
-
-    SpeechRecognitionWrapper.prototype = OriginalSpeechRecognition.prototype;
-    SpeechRecognitionWrapper.prototype.constructor = SpeechRecognitionWrapper;
-
-    if (window.SpeechRecognition) {
-      window.SpeechRecognition = SpeechRecognitionWrapper;
-    }
-    if (window.webkitSpeechRecognition) {
-      window.webkitSpeechRecognition = SpeechRecognitionWrapper;
-    }
-  }
-
-  interceptSpeechRecognition();
-
-  window.addEventListener('message', function(event) {
-    if (event.data) {
-      if (event.data.type === 'resolveMediaPermission') {
-        const { promiseId, granted } = event.data;
-        if (pendingMediaResolvers[promiseId]) {
-          pendingMediaResolvers[promiseId](granted);
-        }
-      }
-    }
-  });
-
-})();</script><script ws-interception-config="{&quot;parentOrigin&quot;:&quot;https://gemini.google.com&quot;,&quot;proxiedDomains&quot;:[]}" data-bard-client-injected="true">(function(){'use strict';var u=typeof Object.defineProperties=="function"?Object.defineProperty:function(b,d,e){if(b==Array.prototype||b==Object.prototype)return b;b[d]=e.value;return b};function v(b){b=["object"==typeof globalThis&&globalThis,b,"object"==typeof window&&window,"object"==typeof self&&self,"object"==typeof global&&global];for(var d=0;d<b.length;++d){var e=b[d];if(e&&e.Math==Math)return e}throw Error("Cannot find global object");}var w=v(this);
-function y(b,d){if(d)a:{var e=w;b=b.split(".");for(var h=0;h<b.length-1;h++){var k=b[h];if(!(k in e))break a;e=e[k]}b=b[b.length-1];h=e[b];d=d(h);d!=h&&d!=null&&u(e,b,{configurable:!0,writable:!0,value:d})}}function z(b){function d(h){return b.next(h)}function e(h){return b.throw(h)}return new Promise(function(h,k){function m(n){n.done?h(n.value):Promise.resolve(n.value).then(d,e).then(m,k)}m(b.next())})}y("globalThis",function(b){return b||w});/*
-
- Copyright The Closure Library Authors.
- SPDX-License-Identifier: Apache-2.0
-*/
-function A(b,d){function e(){}e.prototype=d.prototype;b.j=d.prototype;b.prototype=new e;b.prototype.constructor=b;b.h=function(h,k,m){for(var n=Array(arguments.length-2),p=2;p<arguments.length;p++)n[p-2]=arguments[p];return d.prototype[k].apply(h,n)}};function B(b,d,e="*"){function h(a){if(typeof a==="string")return F.encode(a).buffer;if(a instanceof ArrayBuffer)return a.slice(0);if(ArrayBuffer.isView(a))return a.buffer.slice(a.byteOffset,a.byteOffset+a.byteLength);throw Error("Invalid data type");}function k(a){a=h(a);var f={type:"send",data:new Uint8Array(a)},g;(g=r)==null||g.postMessage(f,[a])}function m(){if(!r)throw Error("Data port not captured yet.");r.onmessage=a=>{if(a.data.type==="message"){a=new MessageEvent("message",{data:G.decode(a.data.data)});
-let f;(f=c.onmessage)==null||f.call(c,a);c.dispatchEvent(a)}}}function n(){if(!t)throw Error("Control port not captured yet.");t.onmessage=a=>{switch(a.data.type){case "open":l=1;var f=new Event("open"),g;(g=c.onopen)==null||g.call(c,f);c.dispatchEvent(f);q.forEach(H=>{k(H)});q=[];break;case "close":g=a.data;l=3;g=new CloseEvent("close",{code:g.code,reason:g.reason,wasClean:g.wasClean});(f=c.onclose)==null||f.call(c,g);c.dispatchEvent(g);break;case "error":l=3;f=new Event("error");let x;(x=c.onerror)==
-null||x.call(c,f);c.dispatchEvent(f)}}}function p(a){return z(function*(){var f=new MessageChannel;t=f.port1;var g=new MessageChannel;r=g.port1;n();m();window.parent.postMessage({type:"websocket_open",portOrdering:["control","data"],url:b,protocols:a||[],connectionId:I},e,[f.port2,g.port2])}())}var c=Reflect.construct(EventTarget,[],new.target);c.CONNECTING=0;c.OPEN=1;c.CLOSING=2;c.CLOSED=3;c.url=b;c.binaryType="arraybuffer";c.protocol="";c.i="";var l=0,t=null,r=null,q=[],F=new TextEncoder,G=new TextDecoder;
-c.onopen=null;c.onmessage=null;c.onclose=null;c.onerror=null;Object.defineProperty(c,"readyState",{get:()=>l,enumerable:!0,configurable:!0});Object.defineProperty(c,"bufferedAmount",{get:()=>{var a=0;q.forEach(f=>{a+=typeof f==="string"?f.length:f.byteLength});return a},enumerable:!0,configurable:!0});var I=function(){var a;return((a=globalThis.crypto)==null?0:a.randomUUID)?globalThis.crypto.randomUUID():"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,f=>{var g=Math.random()*16|0;return(f===
-"x"?g:g&3|8).toString(16)})}();c.send=a=>{if(l===1)a instanceof Blob?a.arrayBuffer().then(f=>{k(f)}):k(a);else if(l===0)if(typeof a==="string")q.push(a);else if(a instanceof ArrayBuffer||ArrayBuffer.isView(a))q.push(h(a));else throw Error("Sending Blob is not supported before the connection is open.");else console.debug("WebSocket send called in CLOSING or CLOSED state; ignored.")};c.close=(a=1E3,f="")=>{if(l!==2&&l!==3){l=2;a={type:"close",code:a,reason:f,wasClean:a===1E3};var g;(g=t)==null||g.postMessage(a)}};
-Promise.resolve().then(()=>p(d));return c}A(B,EventTarget);var C=document.currentScript,D=C==null?void 0:C.getAttribute("ws-interception-config");if(!D)throw Error("WebSocket Interceptor: Missing ws-interception-config attribute in the script tag.");var E=JSON.parse(D);if(!E.parentOrigin||typeof E.parentOrigin!=="string")throw Error("WebSocket Interceptor: Invalid parentOrigin in ws-interception-config");
-(function(b){var d=Object.getOwnPropertyDescriptor(window,"WebSocket");if(!d||d.writable||d.configurable)d=Object.assign(function(e,h){try{let k=(new URL(e)).hostname;if(b.proxiedDomains.some(m=>k===m||k.endsWith(`.${m}`)))return new B(e,h,b.parentOrigin)}catch(k){throw window.parent.postMessage({type:"websocket_blocked",url:e,reason:"blocked_invalid_url"},b.parentOrigin),new DOMException(`WebSocket connection to '${e}' is not allowed in Canvas.`,"SecurityError");}window.parent.postMessage({type:"websocket_blocked",
-url:e,reason:"blocked_domain_not_allowlisted"},b.parentOrigin);throw new DOMException(`WebSocket connection to '${e}' is not allowed in Canvas.`,"SecurityError");},{CONNECTING:0,OPEN:1,CLOSING:2,CLOSED:3}),Object.defineProperty(window,"WebSocket",{value:d,writable:!1,configurable:!1})})({proxiedDomains:E.proxiedDomains||[],parentOrigin:E.parentOrigin});}).call(this);
-</script><script data-bard-client-injected="true">((function(modelInformation) {
-  const originalFetch = window.fetch;
-  // TODO: b/421908508 - Move these out of the script and match all generative AI model calls.
-  let googleLlmBaseApiUrls = [
-    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.textModelName + ':streamGenerateContent',
-    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.textModelName + ':generateContent',
-    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.imageModelName + ':predict',
-    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.imageModelName + ':predictLongRunning',
-    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.imageEditModelName + ':generateContent',
-    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.imageTransformModelName + ':generateContent',
-    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.videoModelName + ':predict',
-    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.videoModelName + ':predictLongRunning',
-    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.ttsModelName + ':generateContent',
-  ];
-  modelInformation.deprecatedTextModelNames.forEach((modelName) => {
-    googleLlmBaseApiUrls.push(
-      'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':streamGenerateContent',
-      'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':generateContent',
-    );
-  });
-  modelInformation.deprecatedImageModelNames.forEach((modelName) => {
-    googleLlmBaseApiUrls.push(
-      'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':predict',
-      'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':predictLongRunning',
-      'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':generateContent',
-      'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':streamGenerateContent',
-    );
-  });
-  modelInformation.deprecatedGenerateImageModelNames.forEach((modelName) => {
-    googleLlmBaseApiUrls.push(
-      'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':generateContent',
-      'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':streamGenerateContent',
-    );
-  });
-  modelInformation.deprecatedImageTransformModelNames.forEach((modelName) => {
-    googleLlmBaseApiUrls.push(
-      'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':generateContent',
-      'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':streamGenerateContent',
-    );
-  });
-
-  const pendingFetchResolvers = {};
-  let nextPromiseId = 0;
-
-  function handleStringInput(input, optionsArgument) {
-    const actualUrl = input;
-    const fetchCallArgs = [actualUrl, optionsArgument];
-    const effectiveOptions = optionsArgument || {};
-    const bodyForApiKeyCheck = effectiveOptions.body;
-    const bodyForPostMessage = effectiveOptions.body;
-    return { actualUrl, fetchCallArgs, effectiveOptions, bodyForApiKeyCheck, bodyForPostMessage };
-  }
-
-  function handleRequestInput(input, optionsArgument) {
-    const actualUrl = input.url;
-    const fetchCallArgs = [input, optionsArgument];
-    const effectiveOptions = { method: input.method, headers: new Headers(input.headers) };
-    let bodyForApiKeyCheck;
-    let bodyForPostMessage;
-
-    if (optionsArgument) {
-      if (optionsArgument.method) effectiveOptions.method = optionsArgument.method;
-      if (optionsArgument.headers) effectiveOptions.headers = new Headers(optionsArgument.headers);
-      if ('body' in optionsArgument) {
-        bodyForApiKeyCheck = optionsArgument.body;
-        bodyForPostMessage = optionsArgument.body;
-      } else {
-        bodyForApiKeyCheck = undefined;
-        bodyForPostMessage = input.body;
-      }
-    } else {
-      bodyForApiKeyCheck = undefined;
-      bodyForPostMessage = input.body;
-    }
-    return { actualUrl, fetchCallArgs, effectiveOptions, bodyForApiKeyCheck, bodyForPostMessage };
-  }
-
-  window.fetch = function(input, optionsArgument) {
-    let actualUrl;
-    let fetchCallArgs;
-    let effectiveOptions = {};
-    let bodyForApiKeyCheck;
-    let bodyForPostMessage;
-
-    if (typeof input === 'string') {
-      ({actualUrl, fetchCallArgs, effectiveOptions, bodyForApiKeyCheck, bodyForPostMessage} = handleStringInput(input, optionsArgument));
-    } else if (input instanceof Request) {
-      ({actualUrl, fetchCallArgs, effectiveOptions, bodyForApiKeyCheck, bodyForPostMessage} = handleRequestInput(input, optionsArgument));
-    } else {
-      return originalFetch.apply(window, [input, optionsArgument]);
-    }
-
-    effectiveOptions.method = effectiveOptions.method || 'GET';
-    if (!effectiveOptions.headers) {
-      effectiveOptions.headers = new Headers();
-    }
-
-
-    if (typeof actualUrl === 'string' && googleLlmBaseApiUrls.some((url) => actualUrl.startsWith(url))) {
-      let apiKeyIsNull = true;
-
-      const regex = new RegExp("models/([^:]+)");
-      const modelNameMatch = actualUrl.match(regex);
-      const modelName = modelNameMatch ? modelNameMatch[1] : 'unspecified';
-
-
-      try {
-        const urlObject = new URL(actualUrl);  // Use URL object for robust parsing
-        const apiKeyParam = urlObject.searchParams.get('key');
-        if (apiKeyParam) {
-          apiKeyIsNull = false;
-        }
-      } catch (e) {
-        // Continue checks even if URL parsing fails
-      }
-
-      if (apiKeyIsNull && effectiveOptions.headers) {
-        const h = new Headers(effectiveOptions.headers);
-        const apiKeyHeaderValue = h.get('X-API-Key') || h.get('x-api-key');
-        if (apiKeyHeaderValue) {
-          apiKeyIsNull = false;
-          return originalFetch.apply(window, fetchCallArgs);
-        }
-      }
-
-      if (apiKeyIsNull && effectiveOptions.method && ['POST', 'PUT', 'PATCH'].includes(effectiveOptions.method.toUpperCase()) && typeof bodyForApiKeyCheck === 'string') {
-        try {
-          const bodyData = JSON.parse(bodyForApiKeyCheck);
-          if (bodyData && bodyData.apiKey) {
-            apiKeyIsNull = false;
-            return originalFetch.apply(window, fetchCallArgs);
-          }
-        } catch (e) {
-          // Ignore JSON parsing errors
-        }
-      }
-
-      if(apiKeyIsNull) {
-        const promiseId = nextPromiseId++;
-        const promise = new Promise((resolve) => {
-          pendingFetchResolvers[promiseId] = (resolvedResponse) => {
-            delete pendingFetchResolvers[promiseId];
-            resolve(resolvedResponse);
-          };
-        });
-
-        let serializedBodyForPostMessage;
-        if (typeof bodyForPostMessage === 'string' || bodyForPostMessage == null) {
-            serializedBodyForPostMessage = bodyForPostMessage;
-        } else if (bodyForPostMessage instanceof ReadableStream) {
-            serializedBodyForPostMessage = null;
-        } else {
-            try {
-                serializedBodyForPostMessage = JSON.stringify(bodyForPostMessage);
-            } catch (e) {
-                serializedBodyForPostMessage = null;
-            }
-        }
-
-        const messageOptions = {
-            method: effectiveOptions.method,
-            headers: Object.fromEntries(new Headers(effectiveOptions.headers).entries()),
-            body: serializedBodyForPostMessage
-        };
-
-        window.parent.postMessage({
-          type: 'requestFetch',
-          url: actualUrl,
-          modelName: modelName,
-          options: messageOptions,
-          promiseId: promiseId,
-        }, '*');
-
-        return promise;
-      }
-      return originalFetch.apply(window, fetchCallArgs);
-    }
-    return originalFetch.apply(window, fetchCallArgs);
-  };
-
-  window.addEventListener('message', function(event) {
-    if (event.data && event.data.type === 'resolveFetch') {
-      const { promiseId, response } = event.data;
-      if (pendingFetchResolvers[promiseId]) {
-        try {
-          const reconstructedResponse = new Response(response.body, {
-            status: response.status,
-            statusText: response.statusText,
-            headers: new Headers(response.headers),
-          });
-          pendingFetchResolvers[promiseId](reconstructedResponse);
-        } catch (error) {
-          pendingFetchResolvers[promiseId](new Response(null, { status: 500, statusText: "Interceptor Response Reconstruction Error" }));
-        }
-      }
-    }
-  });
-
-}))({"textModelName":"gemini-3-flash-preview","imageModelName":"imagen-4.0-generate-001","imageEditModelName":"gemini-3.1-flash-image","imageTransformModelName":"gemini-3-pro-image","videoModelName":"veo-2.0-generate-001","ttsModelName":"gemini-2.5-flash-preview-tts","deprecatedTextModelNames":["gemini-2.0-flash","gemini-2.5-flash","gemini-2.5-flash-preview-04-17","gemini-2.5-flash-preview-05-20","gemini-2.5-flash-preview-09-2025"],"deprecatedImageModelNames":["imagen-3.0-generate-001","imagen-3.0-generate-002"],"deprecatedGenerateImageModelNames":["gemini-2.5-flash-image-preview","gemini-2.5-flash-image","gemini-3.1-flash-image-preview"],"deprecatedImageTransformModelNames":["gemini-3-pro-image-preview-11-2025"]})</script><script data-bard-client-injected="true">(function(){'use strict';function a(){window.parent.postMessage({type:"interaction"},"*")}window.addEventListener("click",a,{capture:!0,passive:!0});window.addEventListener("touchstart",a,{capture:!0,passive:!0});window.addEventListener("keydown",a,{capture:!0,passive:!0});}).call(this);
-</script><script data-bard-client-injected="true">(function() {
-  const originalConsoleLog = console.log;
-  const originalConsoleError = console.error;
-
-    /**
-   * Normalizes an error event or a promise rejection reason into a structured error object.
-   * @param {*} errorEventOrReason The error object or reason.
-   * @return {object} Structured error data { message, name, stack }.
-   */
-  function getErrorObject(errorEventOrReason) {
-    if (errorEventOrReason instanceof Error) {
-      return {
-        message: errorEventOrReason.message,
-        name: errorEventOrReason.name,
-        stack: errorEventOrReason.stack,
-      };
-    }
-    // Fallback for non-Error objects.
-    try {
-      return {
-        message: JSON.stringify(errorEventOrReason),
-        name: 'UnknownErrorType',
-        stack: null,
-      };
-    } catch (e) {
-      return {
-        message: String(errorEventOrReason),
-        name: 'UnknownErrorTypeNonStringifiable',
-        stack: null,
-      };
-    }
-  }
-
-  /**
-   * Converts an array of arguments (from log/error) into a single string.
-   * Handles Error objects specially to include their message and stack.
-   * @param {Array<*>} args - Arguments passed to console methods.
-   * @return {string} A string representation of the arguments.
-   */
-  function stringifyArgs(args) {
-    return args
-      .map((arg) => {
-        if (arg instanceof Error) {
-          const {message, stack} = arg;
-          return `Error: ${message}${stack ? ('\nStack: ' + stack) : ''}`;
-        }
-        if (typeof arg === 'object' && arg !== null) {
-          try {
-            return JSON.stringify(arg);
-          } catch (error) {
-            return '[Circular Object]';
-          }
-        } else {
-          return String(arg);
-        }
-      })
-      .join(' ');
-  }
-
-  console.log = function(...args) {
-    const logString = stringifyArgs(args);
-    window.parent.postMessage({ type: 'log', message: logString }, '*');
-    originalConsoleLog.apply(console, args);
-  };
-
-  console.error = function(...args) {
-    let errorData;
-    if (args.length > 0 && args[0] instanceof Error) {
-      const err = args[0];
-      // If the first arg is an Error, capture its details.
-      errorData = {
-        type: 'error',
-        source: 'CONSOLE_ERROR',
-        ...getErrorObject(err),
-        rawArgsString: stringifyArgs(args.slice(1)),
-        timestamp: new Date().toISOString(),
-      };
-    } else {
-      // If not an Error object, treat all args as a general error message.
-      errorData = {
-        type: 'error',
-        source: 'CONSOLE_ERROR',
-        message: stringifyArgs(args),
-        name: 'ConsoleLoggedError',
-        stack: null,
-        timestamp: new Date().toISOString(),
-      };
-    }
-    window.parent.postMessage(errorData, '*');
-    originalConsoleError.apply(console, args);
-  };
-
-  // Listen for global unhandled synchronous errors.
-  window.addEventListener('error', function(event) {
-    const errorDetails = event.error ? getErrorObject(event.error) : {
-      message: event.message,
-      name: 'GlobalError',
-      stack: null,
-      filename: event.filename,
-      lineno: event.lineno,
-      colno: event.colno,
-    };
-
-    window.parent.postMessage({
-      type: 'error',
-      source: 'global',
-      ...errorDetails,
-      message: errorDetails.message || event.message,
-      timestamp: new Date().toISOString(),
-    }, '*');
-  });
-
-  // Listen for unhandled promise rejections (asynchronous errors).
-  window.addEventListener('unhandledrejection', function(event) {
-    const errorDetails = getErrorObject(event.reason);
-
-    window.parent.postMessage({
-      type: 'error',
-      source: 'unhandledrejection',
-      ...errorDetails,
-      message: errorDetails.message || 'Unhandled Promise Rejection',
-      timestamp: new Date().toISOString(),
-    }, '*');
-  });
-
-})();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arduino Uno Telemetry &amp; Control Hub</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        darkBg: '#0f172a',
-                        cardBg: '#1e293b',
-                    }
-                }
-            }
-        }
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js" crossorigin="anonymous"></script>
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
-<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.absolute{position:absolute}.relative{position:relative}.sticky{position:sticky}.-bottom-4{bottom:-1rem}.-right-4{right:-1rem}.top-0{top:0px}.z-50{z-index:50}.mx-auto{margin-left:auto;margin-right:auto}.ml-2{margin-left:0.5rem}.mr-1\.5{margin-right:0.375rem}.mt-0\.5{margin-top:0.125rem}.mt-3{margin-top:0.75rem}.mt-4{margin-top:1rem}.inline-block{display:inline-block}.flex{display:flex}.grid{display:grid}.hidden{display:none}.h-1\.5{height:0.375rem}.h-10{height:2.5rem}.h-2{height:0.5rem}.h-28{height:7rem}.h-36{height:9rem}.min-h-screen{min-height:100vh}.min-h-\[260px\]{min-height:260px}.w-1\.5{width:0.375rem}.w-10{width:2.5rem}.w-2{width:0.5rem}.w-28{width:7rem}.w-full{width:100%}.max-w-7xl{max-width:80rem}.flex-1{flex:1 1 0%}@keyframes pulse{50%{opacity:.5}}.animate-pulse{animation:pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite}.grid-cols-1{grid-template-columns:repeat(1, minmax(0, 1fr))}.flex-col{flex-direction:column}.items-start{align-items:flex-start}.items-center{align-items:center}.items-baseline{align-items:baseline}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-1\.5{gap:0.375rem}.gap-2{gap:0.5rem}.gap-3{gap:0.75rem}.gap-5{gap:1.25rem}.gap-6{gap:1.5rem}.space-x-2 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.5rem * var(--tw-space-x-reverse));margin-left:calc(0.5rem * calc(1 - var(--tw-space-x-reverse)))}.space-x-3 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.75rem * var(--tw-space-x-reverse));margin-left:calc(0.75rem * calc(1 - var(--tw-space-x-reverse)))}.space-y-1 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.25rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.25rem * var(--tw-space-y-reverse))}.space-y-2 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.5rem * var(--tw-space-y-reverse))}.space-y-6 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1.5rem * var(--tw-space-y-reverse))}.overflow-hidden{overflow:hidden}.overflow-y-auto{overflow-y:auto}.rounded-2xl{border-radius:1rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:0.5rem}.rounded-xl{border-radius:0.75rem}.border{border-width:1px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.border-amber-500\/20{border-color:rgb(245 158 11 / 0.2)}.border-blue-500\/20{border-color:rgb(59 130 246 / 0.2)}.border-emerald-500\/20{border-color:rgb(16 185 129 / 0.2)}.border-orange-500\/20{border-color:rgb(249 115 22 / 0.2)}.border-red-500\/30{border-color:rgb(239 68 68 / 0.3)}.border-slate-700{--tw-border-opacity:1;border-color:rgb(51 65 85 / var(--tw-border-opacity, 1))}.border-slate-800{--tw-border-opacity:1;border-color:rgb(30 41 59 / var(--tw-border-opacity, 1))}.bg-slate-950{--tw-bg-opacity:1;background-color:rgb(2 6 23 / var(--tw-bg-opacity, 1))}.bg-amber-500\/10{background-color:rgb(245 158 11 / 0.1)}.bg-amber-500\/5{background-color:rgb(245 158 11 / 0.05)}.bg-blue-400{--tw-bg-opacity:1;background-color:rgb(96 165 250 / var(--tw-bg-opacity, 1))}.bg-blue-500\/10{background-color:rgb(59 130 246 / 0.1)}.bg-blue-500\/5{background-color:rgb(59 130 246 / 0.05)}.bg-blue-600{--tw-bg-opacity:1;background-color:rgb(37 99 235 / var(--tw-bg-opacity, 1))}.bg-emerald-400{--tw-bg-opacity:1;background-color:rgb(52 211 153 / var(--tw-bg-opacity, 1))}.bg-emerald-500\/10{background-color:rgb(16 185 129 / 0.1)}.bg-emerald-600{--tw-bg-opacity:1;background-color:rgb(5 150 105 / var(--tw-bg-opacity, 1))}.bg-orange-400{--tw-bg-opacity:1;background-color:rgb(251 146 60 / var(--tw-bg-opacity, 1))}.bg-orange-500\/10{background-color:rgb(249 115 22 / 0.1)}.bg-orange-500\/5{background-color:rgb(249 115 22 / 0.05)}.bg-red-500\/10{background-color:rgb(239 68 68 / 0.1)}.bg-red-500\/20{background-color:rgb(239 68 68 / 0.2)}.bg-rose-600{--tw-bg-opacity:1;background-color:rgb(225 29 72 / var(--tw-bg-opacity, 1))}.bg-slate-800{--tw-bg-opacity:1;background-color:rgb(30 41 59 / var(--tw-bg-opacity, 1))}.bg-slate-900\/80{background-color:rgb(15 23 42 / 0.8)}.bg-slate-900\/90{background-color:rgb(15 23 42 / 0.9)}.bg-gradient-to-tr{background-image:linear-gradient(to top right, var(--tw-gradient-stops))}.from-emerald-600{--tw-gradient-from:#059669 var(--tw-gradient-from-position);--tw-gradient-to:rgb(5 150 105 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.to-teal-500{--tw-gradient-to:#14b8a6 var(--tw-gradient-to-position)}.p-1{padding:0.25rem}.p-2{padding:0.5rem}.p-2\.5{padding:0.625rem}.p-3{padding:0.75rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.p-6{padding:1.5rem}.px-2\.5{padding-left:0.625rem;padding-right:0.625rem}.px-3{padding-left:0.75rem;padding-right:0.75rem}.px-3\.5{padding-left:0.875rem;padding-right:0.875rem}.px-4{padding-left:1rem;padding-right:1rem}.py-0\.5{padding-top:0.125rem;padding-bottom:0.125rem}.py-1{padding-top:0.25rem;padding-bottom:0.25rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-2\.5{padding-top:0.625rem;padding-bottom:0.625rem}.py-3\.5{padding-top:0.875rem;padding-bottom:0.875rem}.py-6{padding-top:1.5rem;padding-bottom:1.5rem}.pb-4{padding-bottom:1rem}.pt-2{padding-top:0.5rem}.pt-4{padding-top:1rem}.font-mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}.text-4xl{font-size:2.25rem;line-height:2.5rem}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.font-extrabold{font-weight:800}.font-medium{font-weight:500}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.tracking-tight{letter-spacing:-0.025em}.tracking-wider{letter-spacing:0.05em}.text-slate-100{--tw-text-opacity:1;color:rgb(241 245 249 / var(--tw-text-opacity, 1))}.text-amber-400{--tw-text-opacity:1;color:rgb(251 191 36 / var(--tw-text-opacity, 1))}.text-blue-400{--tw-text-opacity:1;color:rgb(96 165 250 / var(--tw-text-opacity, 1))}.text-emerald-400{--tw-text-opacity:1;color:rgb(52 211 153 / var(--tw-text-opacity, 1))}.text-emerald-500{--tw-text-opacity:1;color:rgb(16 185 129 / var(--tw-text-opacity, 1))}.text-orange-400{--tw-text-opacity:1;color:rgb(251 146 60 / var(--tw-text-opacity, 1))}.text-red-300{--tw-text-opacity:1;color:rgb(252 165 165 / var(--tw-text-opacity, 1))}.text-red-400{--tw-text-opacity:1;color:rgb(248 113 113 / var(--tw-text-opacity, 1))}.text-slate-200{--tw-text-opacity:1;color:rgb(226 232 240 / var(--tw-text-opacity, 1))}.text-slate-300{--tw-text-opacity:1;color:rgb(203 213 225 / var(--tw-text-opacity, 1))}.text-slate-400{--tw-text-opacity:1;color:rgb(148 163 184 / var(--tw-text-opacity, 1))}.text-slate-500{--tw-text-opacity:1;color:rgb(100 116 139 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.antialiased{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}.shadow-lg{--tw-shadow:0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-sm{--tw-shadow:0 1px 2px 0 rgb(0 0 0 / 0.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-xl{--tw-shadow:0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color), 0 8px 10px -6px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-blue-600\/20{--tw-shadow-color:rgb(37 99 235 / 0.2);--tw-shadow:var(--tw-shadow-colored)}.shadow-emerald-500\/20{--tw-shadow-color:rgb(16 185 129 / 0.2);--tw-shadow:var(--tw-shadow-colored)}.shadow-emerald-600\/20{--tw-shadow-color:rgb(5 150 105 / 0.2);--tw-shadow:var(--tw-shadow-colored)}.shadow-rose-600\/20{--tw-shadow-color:rgb(225 29 72 / 0.2);--tw-shadow:var(--tw-shadow-colored)}.blur-2xl{--tw-blur:blur(40px);filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.backdrop-blur{--tw-backdrop-blur:blur(8px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition{transition-property:color, background-color, border-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.duration-300{transition-duration:300ms}.selection\:bg-blue-500 *::selection{--tw-bg-opacity:1;background-color:rgb(59 130 246 / var(--tw-bg-opacity, 1))}.selection\:text-white *::selection{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.selection\:bg-blue-500::selection{--tw-bg-opacity:1;background-color:rgb(59 130 246 / var(--tw-bg-opacity, 1))}.selection\:text-white::selection{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.hover\:bg-blue-500:hover{--tw-bg-opacity:1;background-color:rgb(59 130 246 / var(--tw-bg-opacity, 1))}.hover\:bg-emerald-500:hover{--tw-bg-opacity:1;background-color:rgb(16 185 129 / var(--tw-bg-opacity, 1))}.hover\:bg-rose-500:hover{--tw-bg-opacity:1;background-color:rgb(244 63 94 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-700:hover{--tw-bg-opacity:1;background-color:rgb(51 65 85 / var(--tw-bg-opacity, 1))}.hover\:text-red-300:hover{--tw-text-opacity:1;color:rgb(252 165 165 / var(--tw-text-opacity, 1))}@media (min-width: 640px){.sm\:inline{display:inline}}@media (min-width: 768px){.md\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}}@media (min-width: 1024px){.lg\:col-span-2{grid-column:span 2 / span 2}.lg\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.lg\:p-8{padding:2rem}.lg\:px-8{padding-left:2rem;padding-right:2rem}}</style></head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-blue-500 selection:text-white">
-
-    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50 px-4 lg:px-8 py-3.5 flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-            <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                <i class="fa-solid fa-microchip text-white text-lg"></i>
-            </div>
-            <div>
-                <h1 class="font-bold text-lg text-slate-100 tracking-tight flex items-center gap-2">
-                    Arduino Uno Hub 
-                    <span id="connectionBadge" class="text-xs px-2.5 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1.5"></span> Ready / Awaiting Stream
-                    </span>
-                </h1>
-                <p class="text-xs text-slate-400">USB Serial Telemetry &amp; Actuator Suite</p>
-            </div>
-        </div>
-
-        <div class="flex items-center space-x-3">
-            <button onclick="downloadDashboardFile()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium transition flex items-center gap-2 border border-slate-700 shadow-sm">
-                <i class="fa-solid fa-download text-emerald-400"></i>
-                <span class="hidden sm:inline">Download File</span>
-            </button>
-            <button id="connectSerialBtn" onclick="toggleSerialConnection()" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition flex items-center gap-2 shadow-lg shadow-blue-600/20">
-                <i class="fa-solid fa-plug"></i>
-                <span id="connectBtnText">Connect USB Port</span>
-            </button>
-            <button onclick="toggleDarkMode()" class="p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition border border-slate-700">
-                <i id="themeIcon" class="fa-solid fa-sun text-amber-400"></i>
-            </button>
-        </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Space Mini-Car Telemetry</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    body { background: #0b1220; color: #e2e8f0; }
+    .card { background: #111827; border: 1px solid #1e293b; border-radius: 1rem; }
+    .chart-wrap { position: relative; height: 240px; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-white">Space Mini-Car Telemetry</h1>
+        <p class="text-sm text-slate-400 mt-1">Separate charts: temperature, humidity, and light vs time</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="statusBadge" class="text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">Offline</span>
+        <button id="connectBtn" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium">Connect USB Port</button>
+      </div>
     </header>
-
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-8 space-y-6">
-
-        <div id="warningBanner" class="hidden rounded-xl bg-red-500/10 border border-red-500/30 p-4 flex items-start gap-3 transition-all duration-300">
-            <div class="p-2 rounded-lg bg-red-500/20 text-red-400 mt-0.5">
-                <i class="fa-solid fa-triangle-exclamation text-lg"></i>
-            </div>
-            <div class="flex-1">
-                <h3 class="text-sm font-semibold text-red-400">Warning Threshold Triggered!</h3>
-                <p id="warningMessage" class="text-xs text-red-300 mt-0.5">Temperature is below 10°C or Humidity is below 60%.</p>
-            </div>
-            <button onclick="dismissWarning()" class="text-red-400 hover:text-red-300 p-1">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
+    <div id="warningBanner" class="hidden card border-red-500/40 bg-red-950/40 px-4 py-3">
+      <p class="text-sm font-semibold text-red-300">Warning threshold triggered</p>
+      <p id="warningMessage" class="text-xs text-red-300/80 mt-0.5">Temperature is below 10 C or humidity is below 60%.</p>
+    </div>
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="card p-5"><p class="text-xs uppercase tracking-wider text-slate-400">Temperature</p><p class="mt-2 text-3xl font-bold text-orange-400"><span id="tempVal">--</span> <span class="text-lg text-slate-500">C</span></p><p id="tempTime" class="mt-2 text-xs text-slate-500">Awaiting serial</p></div>
+      <div class="card p-5"><p class="text-xs uppercase tracking-wider text-slate-400">Humidity</p><p class="mt-2 text-3xl font-bold text-cyan-400"><span id="humVal">--</span> <span class="text-lg text-slate-500">%</span></p><p id="humTime" class="mt-2 text-xs text-slate-500">Awaiting serial</p></div>
+      <div class="card p-5"><p class="text-xs uppercase tracking-wider text-slate-400">Light (LDR)</p><p class="mt-2 text-3xl font-bold text-amber-300"><span id="ldrVal">--</span> <span class="text-lg text-slate-500">ADC</span></p><p id="ldrTime" class="mt-2 text-xs text-slate-500">Awaiting serial</p></div>
+    </section>
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="card p-4"><h2 class="text-sm font-semibold text-orange-300 mb-2">Temperature vs time</h2><div class="chart-wrap"><canvas id="tempChart"></canvas></div></div>
+      <div class="card p-4"><h2 class="text-sm font-semibold text-cyan-300 mb-2">Humidity vs time</h2><div class="chart-wrap"><canvas id="humChart"></canvas></div></div>
+      <div class="card p-4"><h2 class="text-sm font-semibold text-amber-300 mb-2">Light intensity vs time</h2><div class="chart-wrap"><canvas id="ldrChart"></canvas></div></div>
+    </section>
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="card p-5 space-y-3">
+        <h3 class="text-sm font-semibold">Arduino controls</h3>
+        <div class="flex gap-2">
+          <button onclick="sendSerialCommand('1')" class="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white text-sm">Send 1 (ON)</button>
+          <button onclick="sendSerialCommand('0')" class="flex-1 py-2.5 rounded-xl bg-rose-600 text-white text-sm">Send 0 (OFF)</button>
         </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <!-- Temperature Card -->
-            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 relative overflow-hidden shadow-xl">
-                <div class="absolute -right-4 -bottom-4 w-28 h-28 bg-orange-500/5 rounded-full blur-2xl"></div>
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Temperature (DHT11)</span>
-                    <div class="p-2.5 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/20">
-                        <i class="fa-solid fa-temperature-three-quarters text-lg"></i>
-                    </div>
-                </div>
-                <div class="mt-4 flex items-baseline gap-2">
-                    <span id="tempVal" class="text-4xl font-extrabold tracking-tight text-slate-100">--</span>
-                    <span class="text-xl font-medium text-slate-400">°C</span>
-                </div>
-                <div class="mt-3 flex items-center justify-between text-xs text-slate-400">
-                    <span>Threshold Limit: <strong class="text-orange-400">&lt; 10.0°C</strong></span>
-                    <span id="tempTime">Awaiting serial telemetry</span>
-                </div>
-            </div>
-
-            <!-- Humidity Card -->
-            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 relative overflow-hidden shadow-xl">
-                <div class="absolute -right-4 -bottom-4 w-28 h-28 bg-blue-500/5 rounded-full blur-2xl"></div>
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Humidity (DHT11)</span>
-                    <div class="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                        <i class="fa-solid fa-droplet text-lg"></i>
-                    </div>
-                </div>
-                <div class="mt-4 flex items-baseline gap-2">
-                    <span id="humVal" class="text-4xl font-extrabold tracking-tight text-slate-100">--</span>
-                    <span class="text-xl font-medium text-slate-400">%</span>
-                </div>
-                <div class="mt-3 flex items-center justify-between text-xs text-slate-400">
-                    <span>Threshold Limit: <strong class="text-blue-400">&lt; 60.0%</strong></span>
-                    <span id="humTime">Awaiting serial telemetry</span>
-                </div>
-            </div>
-
-            <!-- Light Intensity Card -->
-            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 relative overflow-hidden shadow-xl">
-                <div class="absolute -right-4 -bottom-4 w-28 h-28 bg-amber-500/5 rounded-full blur-2xl"></div>
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Light Intensity (LDR)</span>
-                    <div class="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                        <i class="fa-solid fa-sun text-lg"></i>
-                    </div>
-                </div>
-                <div class="mt-4 flex items-baseline gap-2">
-                    <span id="ldrVal" class="text-4xl font-extrabold tracking-tight text-slate-100">--</span>
-                    <span class="text-xl font-medium text-slate-400">adc</span>
-                </div>
-                <div class="mt-3 flex items-center justify-between text-xs text-slate-400">
-                    <span>Analog Input: <strong class="text-amber-400">Pin A0</strong></span>
-                    <span id="ldrTime">Awaiting serial telemetry</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Actuator Control Panel -->
-            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
-                <div>
-                    <div class="flex items-center justify-between pb-4 border-b border-slate-800">
-                        <h2 class="font-semibold text-base text-slate-200 flex items-center gap-2">
-                            <i class="fa-solid fa-sliders text-emerald-500"></i> Arduino Uno Controls
-                        </h2>
-                        <span id="serialStatusBadge" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700">Offline</span>
-                    </div>
-
-                    <div class="py-6 space-y-6">
-                        <div class="space-y-2">
-                            <h4 class="font-medium text-slate-200 text-sm">Send Serial Command</h4>
-                            <p class="text-xs text-slate-400">Send custom characters over USB serial port</p>
-                            <div class="flex gap-2 pt-2">
-                                <button onclick="sendSerialCommand('1')" class="flex-1 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs transition shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-1.5">
-                                    <i class="fa-solid fa-bolt"></i> Send '1' (ON)
-                                </button>
-                                <button onclick="sendSerialCommand('0')" class="flex-1 py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-medium text-xs transition shadow-lg shadow-rose-600/20 flex items-center justify-center gap-1.5">
-                                    <i class="fa-solid fa-power-off"></i> Send '0' (OFF)
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="space-y-2">
-                            <h4 class="font-medium text-slate-200 text-sm">Raw Serial Monitor Log</h4>
-                            <div id="serialLog" class="bg-slate-950 border border-slate-800 rounded-xl p-3 h-36 overflow-y-auto font-mono text-xs text-slate-300 space-y-1">
-                                <span class="text-slate-500">Port closed. Connect USB port or click toggle to start stream...</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="pt-4 border-t border-slate-800 text-xs text-slate-400 flex items-center justify-between">
-                    <span>Baud Rate:</span>
-                    <span class="font-medium text-slate-300">9600 bps</span>
-                </div>
-            </div>
-
-            <!-- Real-time Telemetry Charts -->
-            <div class="lg:col-span-2 bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col">
-                <div class="flex items-center justify-between pb-4 border-b border-slate-800">
-                    <h2 class="font-semibold text-base text-slate-200 flex items-center gap-2">
-                        <i class="fa-solid fa-chart-line text-emerald-500"></i> Live Sensor Telemetry Stream
-                    </h2>
-                    <div class="flex items-center space-x-2 text-xs">
-                        <span class="flex items-center gap-1.5 text-orange-400"><span class="w-2 h-2 rounded-full bg-orange-400"></span> Temp (°C)</span>
-                        <span class="flex items-center gap-1.5 text-blue-400 ml-2"><span class="w-2 h-2 rounded-full bg-blue-400"></span> Hum (%)</span>
-                    </div>
-                </div>
-                <div class="flex-1 relative min-h-[260px] pt-4">
-                    <canvas id="telemetryChart" height="305" style="display: block; box-sizing: border-box; height: 244px; width: 851.2px;" width="1064"></canvas>
-                </div>
-            </div>
-        </div>
-
-    </main>
-
-    <script>
-        let port;
-        let reader;
-        let keepReading = false;
-        let chartInstance = null;
-        let isSimulationMode = false;
-        let simulationTimer = null;
-
-        window.addEventListener('DOMContentLoaded', () => {
-            initChart();
-        });
-
-        // Initialize Chart.js
-        function initChart() {
-            const ctx = document.getElementById('telemetryChart').getContext('2d');
-            chartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [
-                        {
-                            label: 'Temperature (°C)',
-                            data: [],
-                            borderColor: '#f97316',
-                            backgroundColor: 'rgba(249, 115, 22, 0.1)',
-                            borderWidth: 2.5,
-                            tension: 0.35,
-                            fill: true,
-                            pointRadius: 2
-                        },
-                        {
-                            label: 'Humidity (%)',
-                            data: [],
-                            borderColor: '#3b82f6',
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            borderWidth: 2.5,
-                            tension: 0.35,
-                            fill: true,
-                            pointRadius: 2
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                            ticks: { color: '#64748b', font: { size: 10 } }
-                        },
-                        y: {
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                            ticks: { color: '#64748b', font: { size: 10 } }
-                        }
-                    },
-                    plugins: {
-                        legend: { display: false }
-                    }
-                }
-            });
-        }
-
-        // Web Serial API Connection Handler with Permissions Policy Fallback
-        async function toggleSerialConnection() {
-            if (port) {
-                await disconnectSerial();
-            } else {
-                await connectSerial();
-            }
-        }
-
-        async function connectSerial() {
-            if (!('serial' in navigator)) {
-                alert("Web Serial API is not supported by your browser. Running in telemetry simulation mode.");
-                return;
-            }
-
-            try {
-                port = await navigator.serial.requestPort();
-                await port.open({ baudRate: 9600 });
-
-                if (simulationTimer) clearInterval(simulationTimer);
-                isSimulationMode = false;
-
-                document.getElementById('connectionBadge').innerHTML = `<span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1.5"></span> Connected`;
-                document.getElementById('connectionBadge').className = "text-xs px-2.5 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-                document.getElementById('serialStatusBadge').innerText = "Online";
-                document.getElementById('serialStatusBadge').className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-                document.getElementById('connectBtnText').innerText = "Disconnect USB";
-
-                keepReading = true;
-                readSerialLoop();
-            } catch (err) {
-                console.warn("Serial access restricted or cancelled:", err);
-                appendLog(`Notice: USB serial access not granted or unavailable.`);
-            }
-        }
-
-        async function disconnectSerial() {
-            keepReading = false;
-            if (reader) {
-                await reader.cancel();
-                reader = null;
-            }
-            if (port) {
-                await port.close();
-                port = null;
-            }
-
-            isSimulationMode = false;
-            if (simulationTimer) clearInterval(simulationTimer);
-
-            document.getElementById('connectionBadge').innerHTML = `<span class="inline-block w-1.5 h-1.5 rounded-full bg-slate-400 mr-1.5"></span> Disconnected`;
-            document.getElementById('connectionBadge').className = "text-xs px-2.5 py-0.5 rounded-full font-medium bg-slate-800 text-slate-400 border border-slate-700";
-            document.getElementById('serialStatusBadge').innerText = "Offline";
-            document.getElementById('serialStatusBadge').className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700";
-            document.getElementById('connectBtnText').innerText = "Connect USB Port";
-            appendLog("Serial port disconnected.");
-        }
-
-        // Read stream data from Arduino Uno
-        async function readSerialLoop() {
-            const textDecoder = new TextDecoderStream();
-            const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
-            reader = textDecoder.readable.getReader();
-
-            let buffer = "";
-            try {
-                while (keepReading) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
-                    if (value) {
-                        buffer += value;
-                        let lines = buffer.split('\n');
-                        buffer = lines.pop(); // Keep incomplete line in buffer
-
-                        for (let line of lines) {
-                            line = line.trim();
-                            if (line) {
-                                appendLog(line);
-                                parseArduinoData(line);
-                            }
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error("Read error:", error);
-            } finally {
-                reader.releaseLock();
-            }
-        }
-
-        // Parse Arduino serial output format: 'Temp: 25.4 C | Hum: 65.2 % | LDR: 512'
-        function parseArduinoData(line) {
-            const tempMatch = line.match(/Temp:\s*([-\d.]+)\s*C/);
-            const humMatch = line.match(/Hum:\s*([-\d.]+)\s*%/);
-            const ldrMatch = line.match(/LDR:\s*(\d+)/);
-
-            if (tempMatch && humMatch && ldrMatch) {
-                const temp = parseFloat(tempMatch[1]);
-                const hum = parseFloat(humMatch[1]);
-                const ldr = parseInt(ldrMatch[1]);
-                const timeStr = new Date().toLocaleTimeString();
-
-                document.getElementById('tempVal').innerText = temp.toFixed(1);
-                document.getElementById('humVal').innerText = hum.toFixed(1);
-                document.getElementById('ldrVal').innerText = ldr;
-
-                document.getElementById('tempTime').innerText = `Updated ${timeStr}`;
-                document.getElementById('humTime').innerText = `Updated ${timeStr}`;
-                document.getElementById('ldrTime').innerText = `Updated ${timeStr}`;
-
-                // Check warning criteria matching Arduino logic: Temp < 10 OR Hum < 60
-                const warningActive = (temp < 10.0 || hum < 60.0);
-                const warningBanner = document.getElementById('warningBanner');
-                if (warningActive) {
-                    document.getElementById('warningMessage').innerText = `Warning Triggered! Temp (${temp}°C) < 10°C or Hum (${hum}%) < 60%.`;
-                    warningBanner.classList.remove('hidden');
-                } else {
-                    warningBanner.classList.add('hidden');
-                }
-
-                // Update Chart
-                if (chartInstance) {
-                    const maxPoints = 15;
-                    if (chartInstance.data.labels.length >= maxPoints) {
-                        chartInstance.data.labels.shift();
-                        chartInstance.data.datasets[0].data.shift();
-                        chartInstance.data.datasets[1].data.shift();
-                    }
-                    chartInstance.data.labels.push(timeStr);
-                    chartInstance.data.datasets[0].data.push(temp);
-                    chartInstance.data.datasets[1].data.push(hum);
-                    chartInstance.update('none');
-                }
-            }
-        }
-
-        async function sendSerialCommand(cmd) {
-            if (!port || !port.writable) {
-                appendLog(`Error: Serial port not connected. Cannot transmit command '${cmd}'.`);
-                return;
-            }
-            try {
-                const writer = port.writable.getWriter();
-                const encoder = new TextEncoder();
-                await writer.write(encoder.encode(cmd));
-                writer.releaseLock();
-                appendLog(`Sent command: ${cmd}`);
-            } catch (err) {
-                console.error("Write error:", err);
-                appendLog(`Failed to send command: ${err.message}`);
-            }
-        }
-
-        function appendLog(text) {
-            const logBox = document.getElementById('serialLog');
-            const p = document.createElement('div');
-            p.innerText = `> ${text}`;
-            logBox.appendChild(p);
-            logBox.scrollTop = logBox.scrollHeight;
-        }
-
-        function dismissWarning() {
-            document.getElementById('warningBanner').classList.add('hidden');
-        }
-
-        function downloadDashboardFile() {
-            const htmlContent = document.documentElement.outerHTML;
-            const blob = new Blob([htmlContent], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'arduino_uno_dashboard.html';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-
-        function toggleDarkMode() {
-            const html = document.documentElement;
-            const icon = document.getElementById('themeIcon');
-            html.classList.toggle('dark');
-            if (html.classList.contains('dark')) {
-                icon.className = "fa-solid fa-sun text-amber-400";
-            } else {
-                icon.className = "fa-solid fa-moon text-slate-300";
-            }
-        }
-    </script>
-
-</body></html>
+        <button onclick="clearCharts()" class="w-full py-2 rounded-xl bg-slate-700 text-sm">Clear charts</button>
+        <p class="text-xs text-slate-500">9600 baud. Expected: Temp: 25.4 C | Hum: 65.2 % | LDR: 512</p>
+      </div>
+      <div class="card p-5">
+        <h3 class="text-sm font-semibold mb-2">Serial log</h3>
+        <div id="serialLog" class="bg-slate-950 border border-slate-800 rounded-xl p-3 h-40 overflow-y-auto font-mono text-xs text-slate-300"><div class="text-slate-500">Port closed.</div></div>
+      </div>
+    </section>
+  </div>
+<script>
+const MAX_POINTS = 60;
+const history = { labels: [], temp: [], hum: [], ldr: [] };
+function makeChart(id, color, ymin, ymax) {
+  return new Chart(document.getElementById(id), {
+    type: 'line',
+    data: { labels: [], datasets: [{ data: [], borderColor: color, backgroundColor: color + '33', borderWidth: 2, pointRadius: 0, tension: 0.25, fill: true }] },
+    options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#64748b', maxTicksLimit: 5, font: { size: 10 } }, grid: { color: '#1e293b' } }, y: { suggestedMin: ymin, suggestedMax: ymax, ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e293b' } } } }
+  });
+}
+const tempChart = makeChart('tempChart', '#fb923c', 0, 40);
+const humChart = makeChart('humChart', '#22d3ee', 0, 100);
+const ldrChart = makeChart('ldrChart', '#fcd34d', 0, 1023);
+function pushPoint(temp, hum, ldr) {
+  const t = new Date().toLocaleTimeString();
+  history.labels.push(t); history.temp.push(temp); history.hum.push(hum); history.ldr.push(ldr);
+  if (history.labels.length > MAX_POINTS) { history.labels.shift(); history.temp.shift(); history.hum.shift(); history.ldr.shift(); }
+  [[tempChart, history.temp], [humChart, history.hum], [ldrChart, history.ldr]].forEach(([c, d]) => { c.data.labels = history.labels; c.data.datasets[0].data = d; c.update('none'); });
+}
+function clearCharts() {
+  history.labels.length = history.temp.length = history.hum.length = history.ldr.length = 0;
+  [tempChart, humChart, ldrChart].forEach(c => { c.data.labels = []; c.data.datasets[0].data = []; c.update('none'); });
+}
+function parseArduinoData(line) {
+  const tempMatch = line.match(/Temp:\s*([-\d.]+)\s*C/i);
+  const humMatch = line.match(/Hum:\s*([-\d.]+)\s*%/i);
+  const ldrMatch = line.match(/LDR:\s*(\d+)/i);
+  if (!tempMatch || !humMatch || !ldrMatch) return;
+  const temp = parseFloat(tempMatch[1]), hum = parseFloat(humMatch[1]), ldr = parseInt(ldrMatch[1], 10);
+  const timeStr = new Date().toLocaleTimeString();
+  document.getElementById('tempVal').textContent = temp.toFixed(1);
+  document.getElementById('humVal').textContent = hum.toFixed(1);
+  document.getElementById('ldrVal').textContent = ldr;
+  document.getElementById('tempTime').textContent = 'Updated ' + timeStr;
+  document.getElementById('humTime').textContent = 'Updated ' + timeStr;
+  document.getElementById('ldrTime').textContent = 'Updated ' + timeStr;
+  const warn = temp < 10 || hum < 60;
+  document.getElementById('warningBanner').classList.toggle('hidden', !warn);
+  if (warn) document.getElementById('warningMessage').textContent = 'Warning! Temp ' + temp + ' C < 10 or Hum ' + hum + '% < 60.';
+  pushPoint(temp, hum, ldr);
+}
+let port = null, reader = null, keepReading = false, writeQueue = Promise.resolve();
+function setStatus(on) {
+  const b = document.getElementById('statusBadge');
+  const btn = document.getElementById('connectBtn');
+  b.textContent = on ? 'Online' : 'Offline';
+  b.className = on ? 'text-xs font-semibold px-3 py-1.5 rounded-full bg-emerald-900/50 text-emerald-300 border border-emerald-700' : 'text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700';
+  btn.textContent = on ? 'Disconnect' : 'Connect USB Port';
+}
+function logLine(text) {
+  const el = document.getElementById('serialLog');
+  const row = document.createElement('div');
+  row.textContent = '[' + new Date().toLocaleTimeString() + '] ' + text;
+  el.appendChild(row);
+  while (el.children.length > 80) el.removeChild(el.firstChild);
+  el.scrollTop = el.scrollHeight;
+}
+async function connectSerial() {
+  if (!('serial' in navigator)) { alert('Use Chrome or Edge. Web Serial is not available here.'); return; }
+  try {
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 9600 });
+    keepReading = true; setStatus(true); logLine('Opened 9600 bps'); readLoop();
+  } catch (err) { logLine('Connect failed: ' + err.message); setStatus(false); }
+}
+async function disconnectSerial() {
+  keepReading = false;
+  try { if (reader) await reader.cancel(); if (port) await port.close(); } catch (e) {}
+  reader = null; port = null; setStatus(false); logLine('Closed');
+}
+async function readLoop() {
+  const decoder = new TextDecoderStream();
+  port.readable.pipeTo(decoder.writable).catch(() => {});
+  reader = decoder.readable.getReader();
+  let buffer = '';
+  try {
+    while (keepReading) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += value || '';
+      let i;
+      while ((i = buffer.indexOf('\n')) >= 0) {
+        const line = buffer.slice(0, i).replace(/\r$/, '').trim();
+        buffer = buffer.slice(i + 1);
+        if (!line) continue;
+        logLine(line);
+        parseArduinoData(line);
+      }
+    }
+  } catch (err) { if (keepReading) logLine('Read error: ' + err.message); }
+}
+async function sendSerialCommand(cmd) {
+  if (!port || !port.writable) { logLine('Not connected'); return; }
+  writeQueue = writeQueue.then(async () => {
+    const w = port.writable.getWriter();
+    try { await w.write(new TextEncoder().encode(cmd)); logLine('TX ' + cmd); }
+    finally { w.releaseLock(); }
+  });
+}
+document.getElementById('connectBtn').addEventListener('click', () => port ? disconnectSerial() : connectSerial());
+</script>
+</body>
+</html>
